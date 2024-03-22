@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7.0.11-alpine
+
+  django:
+    container_name: django
+    build:
+      context: ./reserva_hotel
+    command: python manage.py runserver 0.0.0.0:7777
+    volumes:
+      - ./reserva_hotel:/usr/src/app/
+    ports:
+      - 7778:7777
+      - 3000:3000
+    environment:
+      - DEBUG=1
+      - SECRET_KEY='galo-doido-13'  # Corrected typo from SECRECT_KEY to SECRET_KEY
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+    depends_on:
+      - redis
+
+  celery:
+    container_name: celery
+    build:
+      context: ./reserva_hotel
+
+    command: celery --app=reserva_hotel worker -l INFO
+    volumes:
+      - ./reserva_hotel:/usr/src/app/
+    ports:
+      - 8001:8000  # Use a different port for the celery service
+    environment:
+      - DEBUG=1
+      - SECRET_KEY='galo-doido-13'  # Corrected typo from SECRECT_KEY to SECRET_KEY
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP=True
+
+    depends_on:
+      - redis
